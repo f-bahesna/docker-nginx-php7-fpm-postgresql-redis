@@ -1,0 +1,60 @@
+version: '3'
+
+networks:
+  webapp:
+
+services:
+  nginx:
+    image: nginx:stable
+    container_name: ${APP_NAME}_nginx
+    ports:
+      - "8000:80"
+    links:
+      - php
+    volumes:
+      - ./:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:rw
+    depends_on:
+      - php
+      - postgres
+    networks:
+      - webapp
+
+  pgsql:
+    image: postgres:latest
+    container_name: ${APP_NAME}_postgres
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./docker/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DATABASE: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    networks:
+      - webapp
+
+  php:
+    build:
+      context: .
+      dockerfile: php.Dockerfile
+    container_name: ${APP_NAME}_php
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "9000:9000"
+    networks:
+      - webapp
+    depends_on:
+      - pgsql
+
+  redis-server:
+    image: redis
+    container_name: ${APP_NAME}_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - ./nginx/redis:/data
+    ports:
+      - "6378:6379"

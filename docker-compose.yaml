@@ -22,6 +22,7 @@ services:
 
   pgsql:
     image: postgres:latest
+    user: postgres
     container_name: ${APP_NAME}_postgres
     restart: unless-stopped
     tty: true
